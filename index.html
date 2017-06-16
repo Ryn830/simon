@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset='UTF-8'>
+  <link rel='stylesheet' href='style.css'>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.2.6/vue.min.js'></script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js'></script>
+  <title>Simon</title>
+</head>
+<body>
+  <div id='root'>
+    <svg width='1280' height='700' viewBox='1.3 .1 2.4 2.4' class='game'>
+      <filter id='dropShadow'>
+        <feGaussianBlur in='SourceAlpha' stdDeviation='.03' />
+        <feOffset dx='.01' dy='.01' />
+        <feMerge>
+            <feMergeNode />
+            <feMergeNode in='SourceGraphic' />
+        </feMerge>
+      </filter>
+      <circle cx='2.5' cy='1.25' r='1.1' class='case' filter='url(#dropShadow)'/>
+      <g id='lights'>
+        <light
+          v-for='(light, index) in config.lights'
+          :color='light.color'
+          :create_sound='create_sound'
+          :current='sequence[position]'
+          :d='light.path_description'
+          :disabled='disabled'
+          :duration='duration'
+          :frequency='light.frequency'
+          :key='index'
+          :mode='mode'
+          :signal='signal'
+          @answer='check_answer'
+        ></light>
+      </g>
+      <g class='case'>
+        <circle cx='2.5' cy='1.25' r='.5'/>
+        <rect x='2.455' y='.249' width='.1' height='.505' />
+        <rect x='2.455' y='1.746' width='.1' height='.505' />
+        <rect x='1.495' y='1.185' width='.51' height='.1' />
+        <rect x='2.995' y='1.185' width='.51' height='.1' />
+        <circle cx='2.5' cy='1.25' r='.44' class='center-console'/>
+        <text x='2.14' y='1.15' class='brand' font-size='.25'>simon</text>
+      </g>
+      <g id='position-display'>
+        <rect x='2.145' y='1.195' width='.15' height='.125' rx='.01' class='display'/>
+        <text x='2.156' y='1.305' :class='display_text_style'>{{ display }}</text>
+      </g>
+      <g id='game-mode'>
+        <text x='2.4' y='1.22' font-size='.035' font-family='Helvetica'>MODE</text>
+        <g id='mode-knob' :transform='game_mode_toggle_style'>
+          <rect x='2.32' y='1.235' width='.05' height='.05' fill='lightBlue' @click='toggle_slider("mode_index", "modes", "-")'/>
+          <rect x='2.37' y='1.235' width='.05' height='.05' fill='lightBlue' @click='toggle_slider("mode_index", "modes", "+")'/>
+          <line x1='2.37' y1='1.235' x2='2.37' y2='1.285' stroke-width='.01' stroke='#141414'/>
+        </g>
+        <g id='mode-labels'>
+          <svg x='2.335' y='1.28' width='.06' height='.06' viewBox='0 0 24 24' @click='select_mode("mode_index", 0)'>
+            <path fill='#000000' d='M8,5.14V19.14L19,12.14L8,5.14Z' />
+          </svg>
+          <svg x='2.395' y='1.286' width='.05' height='.05' viewBox='0 0 24 24' @click='select_mode("mode_index", 1)'>
+            <path fill='#000000' d='M11.83,9L15,12.16C15,12.11 15,12.05 15,12A3,3 0 0,0 12,9C11.94,9 11.89,9 11.83,9
+            M7.53,9.8L9.08,11.35C9.03,11.56 9,11.77 9,12A3,3 0 0,0 12,15C12.22,15 12.44,14.97 12.65,14.92L14.2,16.47
+            C13.53,16.8 12.79,17 12,17A5,5 0 0,1 7,12C7,11.21 7.2,10.47 7.53,9.8M2,4.27L4.28,6.55L4.73,7C3.08,8.3 1.78,10 1,12
+            C2.73,16.39 7,19.5 12,19.5C13.55,19.5 15.03,19.2 16.38,18.66L16.81,19.08L19.73,22L21,20.73L3.27,3M12,7A5,5 0 0,1 17,12
+            C17,12.64 16.87,13.26 16.64,13.82L19.57,16.75C21.07,15.5 22.27,13.86 23,12C21.27,7.61 17,4.5 12,4.5C10.6,4.5 9.26,4.75 8,5.2
+            L10.17,7.35C10.74,7.13 11.35,7 12,7Z'/>
+          </svg>
+          <svg x='2.45' y='1.289' width='.05' height='.05' viewBox='0 0 24 24' @click='select_mode("mode_index", 2)'>
+            <path fill='#000000' d='M12,4L9.91,6.09L12,8.18M4.27,3L3,4.27L7.73,9H3V15H7L12,20V13.27L16.25,17.53C15.58,18.04 14.83,18.46
+            14,18.7V20.77C15.38,20.45 16.63,19.82 17.68,18.96L19.73,21L21,19.73L12,10.73M19,12C19,12.94 18.8,13.82 18.46,14.64L19.97,16.15
+            C20.62,14.91 21,13.5 21,12C21,7.72 18,4.14 14,3.23V5.29C16.89,6.15 19,8.83 19,12M16.5,12C16.5,10.23 15.5,8.71 14,7.97V10.18
+            L16.45,12.63C16.5,12.43 16.5,12.21 16.5,12Z' />
+          </svg>
+          <svg x='2.505' y='1.29' width='.05' height='.05' viewBox='0 0 24 24' @click='select_mode("mode_index", 3)'>
+            <path fill='#000000' d='M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12
+            C4,13.85 4.63,15.55 5.68,16.91L16.91,5.68C15.55,4.63 13.85,4 12,4M12,20A8,8 0 0,0 20,12C20,10.15 19.37,8.45 18.32,7.09
+            L7.09,18.32C8.45,19.37 10.15,20 12,20Z' />
+          </svg>
+        </g>
+      </g>
+      <g id='difficulty_controls'>
+        <text x='2.6' y='1.22' font-size='.035' font-family='Helvetica' class='difficult-level'>SKILL LEVEL</text>
+        <g id='knob' :transform='difficulty_toggle_style'>
+          <rect x='2.6' y='1.235' width='.05' height='.05' fill='lightBlue' @click='toggle_slider("level_index", "levels", "-")'/>
+          <rect x='2.65' y='1.235' width='.05' height='.05' fill='lightBlue' @click='toggle_slider("level_index", "levels", "+")'/>
+          <line x1='2.65' y1='1.235' x2='2.65' y2='1.285' stroke-width='.01' stroke='#141414'/>
+        </g>
+        <g id='levels'>
+          <text v-for='(level, index) in config.levels' :x='level.x' :y='level.y' class='label' :key='index' @click='select_mode("level_index", index)'>
+            {{ level.text }}
+          </text>
+        </g>
+      </g>
+      <g id='start-toggle'>
+        <circle cx='2.35' cy='1.425' r='.06' class='case'/>
+        <circle cx='2.35' cy='1.425' r='.04' fill='red' :class='start_button_style' @click='start'/>
+        <text x='2.29' y='1.525' class='label'>START</text>
+      </g>
+      <g id='strict-mode-toggle'>
+        <circle cx='2.65' cy='1.425' r='.06' class='case'/>
+        <circle cx='2.65' cy='1.425' r='.04' fill='yellow' :class='strict_button_style' @click='strict_mode'/>
+        <text x='2.58' y='1.525' class='label'>STRICT</text>
+      </g>
+      <g id='power-button'>
+        <text x='2.342' y='1.617' class='label'>OFF</text>
+        <g @click='toggle_power'>
+          <rect x='2.4375' y='1.575' width='.15' height='.06' rx='.01' fill-opacity='0' stroke='black' stroke-width='.001'/>
+          <rect x='2.515' y='1.58' width='.065' height='.05' rx='.01' :transform='power_button_style'/>
+        </g>
+        <text x='2.6' y='1.617' class='label'>ON</text>
+      </g>
+    </svg>
+  </div>
+</body>
+<script src='app.js'></script>
+</html>
