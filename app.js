@@ -1,6 +1,3 @@
-// Remaining features
-// Victory sounds
-
 Vue.component('light', {
   template: `<path
     :class='[ "light-box", styles ]'
