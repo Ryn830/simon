@@ -57,6 +57,7 @@ svg {
 .brand {
   font-family: 'Pridi', serif;
   fill: black;
+  cursor: pointer;
 }
 
 .display {
